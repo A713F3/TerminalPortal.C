@@ -90,10 +90,10 @@ void playerMove(char * move, PLAYER * player){
     char c;
     for (i = 0; move[i] != '\0'; i++){
         c = move[i];
-        if      (c == 'w') (*player).y--;
-        else if (c == 'a') (*player).x--;
-        else if (c == 's') (*player).y++;
-        else if (c == 'd') (*player).x++;
+        if      (c == 'w' && (*player).y != 1) (*player).y--;
+        else if (c == 'a' && (*player).x != 1) (*player).x--;
+        else if (c == 's' && (*player).y != HEIGHT - 2) (*player).y++;
+        else if (c == 'd' && (*player).x != WIDTH  - 2) (*player).x++;
     }
 }
 
