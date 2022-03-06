@@ -62,10 +62,11 @@ void setColor(HANDLE console, int color, int mode){ //0:RESET 1:COLOR 2:INIT RES
     }
 }
 
-
 void renderMap(HANDLE console, MAP map){
     int i, j;
     char c;
+
+    printf("\n");
     for (i = 0; i < HEIGHT; i++){
         for (j = 0; j < WIDTH; j++){
             c = map.map[i][j];
@@ -106,10 +107,23 @@ int main(){
     map.p2     = 16 + 16*16; // YELLOW PORTAL 2
 
     clearMap(&map);
-
     updateMap(&map, player, p1, p2);
 
-    renderMap(console, map);
+    int running = 1;
+    char move;
+
+    while(running){
+        updateMap(&map, player, p1, p2);
+
+        renderMap(console, map);
+
+        printf("Enter movement: ");
+        move = getchar();
+
+        if (move == '0') running = 0;
+    }
+
+    
 
     return 0;
 }
