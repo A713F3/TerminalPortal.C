@@ -3,6 +3,7 @@
 
 #define WIDTH 20
 #define HEIGHT 20
+#define MAX_MOVE 10
 
 
 struct portal{
@@ -38,8 +39,6 @@ void clearMap(MAP * map){
 }
 
 void updateMap(MAP *map, PLAYER p, PORTAL p1, PORTAL p2){
-    clearMap(map);
-
     (*map).map[p.y][p.x] = 'P';
 
     if (p1.exists) (*map).map[p.y][p.x] = 'o';
@@ -84,6 +83,27 @@ void renderMap(HANDLE console, MAP map){
     }
 }
 
+void playerMove(char * move, PLAYER * player){
+    int i;
+    char c;
+    for (i = 0; move[i] != '\0'; i++){
+        c = move[i];
+        if      (c == 'w') (*player).y--;
+        else if (c == 'a') (*player).x--;
+        else if (c == 's') (*player).y++;
+        else if (c == 'd') (*player).x++;
+    }
+}
+
+// Compare two strings
+int cmpr(const char * c1, const char * c2){
+    int i;
+    for (i = 0; c1[i] != '\0' && c2[i] != '\0'; i++){
+        if (c1[i] != c2[i]) return 0;
+    }
+    return 1;
+}
+
 int main(){
     HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -110,17 +130,20 @@ int main(){
     updateMap(&map, player, p1, p2);
 
     int running = 1;
-    char move;
+    char move[MAX_MOVE];
 
     while(running){
-        updateMap(&map, player, p1, p2);
-
         renderMap(console, map);
 
         printf("Enter movement: ");
-        move = getchar();
+        fgets(move, sizeof(move), stdin);
 
-        if (move == '0') running = 0;
+        if (cmpr(move, "stop")) running = 0;
+
+        playerMove(move, &player);
+
+        clearMap(&map);
+        updateMap(&map, player, p1, p2);
     }
 
     
