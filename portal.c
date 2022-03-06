@@ -7,15 +7,16 @@
 
 #define WALL_ICON     '#'
 #define PLAYER_ICON   'P'
-#define PORTAL_1_ICON 'o'
-#define PORTAL_2_ICON 'O'
+#define PORTAL_1_ICON 'B'
+#define PORTAL_2_ICON 'R'
 #define EMPTY_ICON    ' '
 
 
 struct portal{
     int x, y;
     int exists;
-    int spawn_dir; //0:UP 1:RIGHT 2:DOWN 3:LEFT
+    //0:DOWN 1:LEFT 2:UP 3:RIGHT
+    int spawn_dir; 
 };
 typedef struct portal PORTAL;
 
@@ -50,7 +51,8 @@ void updateMap(MAP *map, PLAYER p, PORTAL p1, PORTAL p2){
     if (p2.exists) (*map).map[p2.y][p2.x] = PORTAL_2_ICON;
 }
 
-void setColor(HANDLE console, int color, int mode){ //0:RESET 1:COLOR 2:INIT RESET
+void setColor(HANDLE console, int color, int mode){ 
+    //0:RESET 1:COLOR 2:INIT RESET
     static CONSOLE_SCREEN_BUFFER_INFO csbiInfo;
     static WORD wOldColorAttrs;
 
@@ -88,93 +90,74 @@ void renderMap(HANDLE console, MAP map){
     }
 }
 
-//TODO: check shooting
-//TODO: portal spawn direction change after shooting
 void shootPortal(MAP map, PLAYER player, char direction, char portal, PORTAL * p1, PORTAL * p2){
     // 0:UP 1:RIGHT 2:DOWN 3:LEFT
-    int velo[2] = {0,0}; // X_VELO, Y_VELO
+    int velo_x = 0, velo_y = 0;
     int ctrl_x = player.x, ctrl_y = player.y;
 
-    switch(direction){
-        case '0':
-            velo[0] = 0;
-            velo[1] = -1;
-            break;
-        case '1':
-            velo[0] = +1;
-            velo[1] = 0;
-            break;
-        case '2':
-            velo[0] = 0;
-            velo[1] = +1;
-            break;
-        case '3':
-            velo[0] = -1;
-            velo[1] = 0;
-            break;
-        default:
-            break;
+    printf("%d %d  ", ctrl_x, ctrl_y);
+
+    if      (direction == '0') velo_y = -1;
+    else if (direction == '1') velo_x = 1;
+    else if (direction == '2') velo_y = 1;
+    else                       velo_x = -1;
+
+    while (map.map[ctrl_y][ctrl_x] != WALL_ICON){
+        ctrl_x += velo_x;
+        ctrl_y += velo_y;
     }
 
-    while (map.map[ctrl_y][ctrl_x] != WALL_ICON && (velo[0] != 0 || velo[1] != 0)){
-        ctrl_x += velo[0];
-        ctrl_y += velo[1];
-    }
-
+    //0's ascii code is 48 
     if (portal == PORTAL_1_ICON){
+        (*p1).exists = 1;
         (*p1).x = ctrl_x;
         (*p1).y = ctrl_y;
+        (*p1).spawn_dir = (int)direction - 48;
     }
     else if (portal == PORTAL_2_ICON){
+        (*p2).exists = 1;
         (*p2).x = ctrl_x;
         (*p2).y = ctrl_y;
+        (*p2).spawn_dir = (int)direction - 48;
     }
 }
 
-void passPortal(PLAYER * player, PORTAL portal){
-    switch(portal.spawn_dir){
-        case 0:
-            (*player).x = portal.x;
-            (*player).y = portal.y - 1;
-            break;
-        case 1:
-            (*player).x = portal.x + 1;
-            (*player).y = portal.y;
-            break;
-        case 2:
-            (*player).x = portal.x;
-            (*player).y = portal.y + 1;
-            break;
-        case 3:
-            (*player).x = portal.x - 1;
-            (*player).y = portal.y;
-            break;
-    }
+void pass2Portal(PLAYER * player, PORTAL portal){
+    (*player).x = portal.x;
+    (*player).y = portal.y;
+
+    if      (portal.spawn_dir == 0) (*player).y++;
+    else if (portal.spawn_dir == 1) (*player).x--;
+    else if (portal.spawn_dir == 2) (*player).y--;
+    else if (portal.spawn_dir == 3) (*player).x++;
 }
 
-//TODO: Fix movement restrict portal passing problem
-//TODO: Implement passing through a portal mechanics
 void playerMove(MAP map, char * move, PLAYER * player, PORTAL p1, PORTAL p2){
     int i, c_x, c_y;
+
+    int * p_x = &((*player).x);
+    int * p_y = &((*player).y); 
+
     char c;
-    for (i = 0; move[i + 1] != '\0'; i++){
+    for (i = 0; move[i] != '\0'; i++){
         c = move[i];
         c_x = 0;
         c_y = 0;
 
-        if      (c == 'w' && (*player).y != 1)          c_y = -1;
-        else if (c == 'a' && (*player).x != 1)          c_x = -1;
-        else if (c == 's' && (*player).y != HEIGHT - 2) c_y = +1;
-        else if (c == 'd' && (*player).x != WIDTH  - 2) c_x = +1;
+        if      (c == 'w') c_y = -1;
+        else if (c == 'a') c_x = -1;
+        else if (c == 's') c_y = +1;
+        else if (c == 'd') c_x = +1;
 
-        (*player).x += c_x;
-        (*player).y += c_y;
+        if (map.map[*p_y + c_y][*p_x + c_x] != WALL_ICON){
+            *p_x += c_x;
+            *p_y += c_y;
 
-        if (map.map[c_y][c_x] == PORTAL_1_ICON){
-            passPortal(player, p1);
-        }
-        else if (map.map[c_y][c_x] == PORTAL_2_ICON){
-            passPortal(player, p2);
+            if (map.map[*p_y][*p_x] == PORTAL_1_ICON && p2.exists)
+                pass2Portal(player, p2);
+
+            else if (map.map[*p_y][*p_x] == PORTAL_2_ICON && p1.exists)
+                pass2Portal(player, p1);
         }
     }
 }
@@ -188,6 +171,7 @@ int cmpr(const char * c1, const char * c2){
     return 1;
 }
 
+
 int main(){
     HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -199,16 +183,10 @@ int main(){
     player.y = 10;
 
     PORTAL p1;
-    p1.exists = 1;
-    p1.spawn_dir = 1;
-    p1.x = 0;
-    p1.y = 10;
+    p1.exists = 0;
 
     PORTAL p2;
-    p2.exists = 1;
-    p1.spawn_dir = 3;
-    p2.x = WIDTH - 1;
-    p2.y = 10;
+    p2.exists = 0;
 
     MAP map;
     map.wall   = 15 + 15*16; // WHITE WALL
@@ -219,25 +197,25 @@ int main(){
     clearMap(&map);
     updateMap(&map, player, p1, p2);
 
-    int running = 1;
     char move[MAX_MOVE], direction, portal;
 
-    while(running){
+    while(1){
         renderMap(console, map);
 
         printf("Enter movement: ");
         fgets(move, sizeof(move), stdin);
 
-        if (cmpr(move, "stop")) running = 0;
+        if (cmpr(move, "stop")) break;
 
         if (cmpr(move, "shoot")) {
-            printf("Enter direction and portal (0:3 and o or O): ");
+            printf("Enter direction and portal (0:3 and R or B): ");
             scanf("%c %c", &direction, &portal);
 
             shootPortal(map, player, direction, portal, &p1, &p2);
         }
-
-        playerMove(map, move, &player, p1, p2);
+        else {
+            playerMove(map, move, &player, p1, p2);
+        }
 
         clearMap(&map);
         updateMap(&map, player, p1, p2);
