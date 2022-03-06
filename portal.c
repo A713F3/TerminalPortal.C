@@ -86,14 +86,20 @@ void renderMap(HANDLE console, MAP map){
 //TODO: Implement passing through a portal mechanics
 //TODO: Implement portal shoting mechanics
 void playerMove(char * move, PLAYER * player){
-    int i;
+    int i, c_x, c_y;
     char c;
     for (i = 0; move[i] != '\0'; i++){
         c = move[i];
-        if      (c == 'w' && (*player).y != 1) (*player).y--;
-        else if (c == 'a' && (*player).x != 1) (*player).x--;
-        else if (c == 's' && (*player).y != HEIGHT - 2) (*player).y++;
-        else if (c == 'd' && (*player).x != WIDTH  - 2) (*player).x++;
+        c_x = 0;
+        c_y = 0;
+
+        if      (c == 'w' && (*player).y != 1)          c_y = -1;
+        else if (c == 'a' && (*player).x != 1)          c_x = -1;
+        else if (c == 's' && (*player).y != HEIGHT - 2) c_y = +1;
+        else if (c == 'd' && (*player).x != WIDTH  - 2) c_x = +1;
+
+        (*player).x += c_x;
+        (*player).y += c_y;
     }
 }
 
