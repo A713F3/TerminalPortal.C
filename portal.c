@@ -5,6 +5,12 @@
 #define HEIGHT 20
 #define MAX_MOVE 10
 
+#define WALL_ICON     '#'
+#define PLAYER_ICON   'P'
+#define PORTAL_1_ICON 'o'
+#define PORTAL_2_ICON 'O'
+#define EMPTY_ICON    ' '
+
 
 struct portal{
     int x, y;
@@ -29,20 +35,20 @@ void clearMap(MAP * map){
     int i, j;
     for (i = 0; i < HEIGHT; i++){
         for (j = 0; j < WIDTH; j++){
-            (*map).map[i][j] = ' ';
+            (*map).map[i][j] = EMPTY_ICON;
 
             //Init walls 
-            if      (i == 0 || i == HEIGHT - 1) (*map).map[i][j] = '#';
-            else if (j == 0 || j == WIDTH  - 1) (*map).map[i][j] = '#';                          
+            if      (i == 0 || i == HEIGHT - 1) (*map).map[i][j] = WALL_ICON;
+            else if (j == 0 || j == WIDTH  - 1) (*map).map[i][j] = WALL_ICON;                          
         }
     }
 }
 
 void updateMap(MAP *map, PLAYER p, PORTAL p1, PORTAL p2){
-    (*map).map[p.y][p.x] = 'P';
+    (*map).map[p.y][p.x] = PLAYER_ICON;
 
-    if (p1.exists) (*map).map[p1.y][p1.x] = 'o';
-    if (p2.exists) (*map).map[p2.y][p2.x] = 'O';
+    if (p1.exists) (*map).map[p1.y][p1.x] = PORTAL_1_ICON;
+    if (p2.exists) (*map).map[p2.y][p2.x] = PORTAL_2_ICON;
 }
 
 void setColor(HANDLE console, int color, int mode){ //0:RESET 1:COLOR 2:INIT RESET
@@ -70,10 +76,10 @@ void renderMap(HANDLE console, MAP map){
         for (j = 0; j < WIDTH; j++){
             c = map.map[i][j];
 
-            if      (c == '#') setColor(console, map.wall, 1);
-            else if (c == 'P') setColor(console, map.player, 1);
-            else if (c == 'o') setColor(console, map.p1, 1);
-            else if (c == 'O') setColor(console, map.p2, 1);
+            if      (c == WALL_ICON)     setColor(console, map.wall, 1);
+            else if (c == PLAYER_ICON)   setColor(console, map.player, 1);
+            else if (c == PORTAL_1_ICON) setColor(console, map.p1, 1);
+            else if (c == PORTAL_2_ICON) setColor(console, map.p2, 1);
 
             printf("%c%c", c, c);
 
@@ -83,12 +89,54 @@ void renderMap(HANDLE console, MAP map){
     }
 }
 
+void shootPortal(MAP map, PLAYER player, char direction, char portal, PORTAL * p1, PORTAL * p2){
+    // 0:UP 1:RIGHT 2:DOWN 3:LEFT
+    int velo[2] = {0,0}; // X_VELO, Y_VELO
+    int ctrl_x = player.x, ctrl_y = player.y;
+
+    switch(direction){
+        case '0':
+            velo[0] = 0;
+            velo[1] = -1;
+            break;
+        case '1':
+            velo[0] = +1;
+            velo[1] = 0;
+            break;
+        case '2':
+            velo[0] = 0;
+            velo[1] = +1;
+            break;
+        case '3':
+            velo[0] = -1;
+            velo[1] = 0;
+            break;
+        default:
+            break;
+    }
+
+    while (map.map[ctrl_y][ctrl_x] != WALL_ICON && (velo[0] != 0 || velo[1] != 0)){
+        ctrl_x += velo[0];
+        ctrl_y += velo[1];
+    }
+
+    if (portal == PORTAL_1_ICON){
+        (*p1).x = ctrl_x;
+        (*p1).y = ctrl_y;
+    }
+    else if (portal == PORTAL_2_ICON){
+        (*p2).x = ctrl_x;
+        (*p2).y = ctrl_y;
+    }
+}
+
+
 //TODO: Implement passing through a portal mechanics
 //TODO: Implement portal shoting mechanics
 void playerMove(char * move, PLAYER * player){
     int i, c_x, c_y;
     char c;
-    for (i = 0; move[i] != '\0'; i++){
+    for (i = 0; move[i + 1] != '\0'; i++){
         c = move[i];
         c_x = 0;
         c_y = 0;
@@ -100,6 +148,8 @@ void playerMove(char * move, PLAYER * player){
 
         (*player).x += c_x;
         (*player).y += c_y;
+
+        //passPortal(player -> x, player -> y, p1, p2);
     }
 }
 
@@ -142,7 +192,7 @@ int main(){
     updateMap(&map, player, p1, p2);
 
     int running = 1;
-    char move[MAX_MOVE];
+    char move[MAX_MOVE], direction, portal;
 
     while(running){
         renderMap(console, map);
@@ -151,6 +201,13 @@ int main(){
         fgets(move, sizeof(move), stdin);
 
         if (cmpr(move, "stop")) running = 0;
+
+        if (cmpr(move, "shoot")) {
+            printf("Enter direction and portal (0:3 and o or O): ");
+            scanf("%c %c", &direction, &portal);
+
+            shootPortal(map, player, direction, portal, &p1, &p2);
+        }
 
         playerMove(move, &player);
 
