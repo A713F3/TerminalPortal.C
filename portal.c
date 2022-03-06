@@ -41,8 +41,8 @@ void clearMap(MAP * map){
 void updateMap(MAP *map, PLAYER p, PORTAL p1, PORTAL p2){
     (*map).map[p.y][p.x] = 'P';
 
-    if (p1.exists) (*map).map[p.y][p.x] = 'o';
-    if (p2.exists) (*map).map[p.y][p.x] = 'O';
+    if (p1.exists) (*map).map[p1.y][p1.x] = 'o';
+    if (p2.exists) (*map).map[p2.y][p2.x] = 'O';
 }
 
 void setColor(HANDLE console, int color, int mode){ //0:RESET 1:COLOR 2:INIT RESET
@@ -115,16 +115,20 @@ int main(){
     player.y = 10;
 
     PORTAL p1;
-    p1.exists = 0;
+    p1.exists = 1;
+    p1.x = 0;
+    p1.y = 10;
 
     PORTAL p2;
-    p2.exists = 0;
+    p2.exists = 1;
+    p2.x = WIDTH - 1;
+    p2.y = 10;
 
     MAP map;
     map.wall   = 15 + 15*16; // WHITE WALL
     map.player =  2 +  2*16; // GREEN PLAYER
     map.p1     =  1 +  1*16; // BLUE PORTAL 1
-    map.p2     = 16 + 16*16; // YELLOW PORTAL 2
+    map.p2     =  4 +  4*16; // YELLOW PORTAL 2
 
     clearMap(&map);
     updateMap(&map, player, p1, p2);
