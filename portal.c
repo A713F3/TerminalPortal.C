@@ -15,8 +15,7 @@
 struct portal{
     int x, y;
     int exists;
-
-    int l_velo_x, l_velo_y;
+    int spawn_dir; //0:UP 1:RIGHT 2:DOWN 3:LEFT
 };
 typedef struct portal PORTAL;
 
@@ -89,6 +88,8 @@ void renderMap(HANDLE console, MAP map){
     }
 }
 
+//TODO: check shooting
+//TODO: portal spawn direction change after shooting
 void shootPortal(MAP map, PLAYER player, char direction, char portal, PORTAL * p1, PORTAL * p2){
     // 0:UP 1:RIGHT 2:DOWN 3:LEFT
     int velo[2] = {0,0}; // X_VELO, Y_VELO
@@ -130,10 +131,30 @@ void shootPortal(MAP map, PLAYER player, char direction, char portal, PORTAL * p
     }
 }
 
+void passPortal(PLAYER * player, PORTAL portal){
+    switch(portal.spawn_dir){
+        case 0:
+            (*player).x = portal.x;
+            (*player).y = portal.y - 1;
+            break;
+        case 1:
+            (*player).x = portal.x + 1;
+            (*player).y = portal.y;
+            break;
+        case 2:
+            (*player).x = portal.x;
+            (*player).y = portal.y + 1;
+            break;
+        case 3:
+            (*player).x = portal.x - 1;
+            (*player).y = portal.y;
+            break;
+    }
+}
 
+//TODO: Fix movement restrict portal passing problem
 //TODO: Implement passing through a portal mechanics
-//TODO: Implement portal shoting mechanics
-void playerMove(char * move, PLAYER * player){
+void playerMove(MAP map, char * move, PLAYER * player, PORTAL p1, PORTAL p2){
     int i, c_x, c_y;
     char c;
     for (i = 0; move[i + 1] != '\0'; i++){
@@ -149,7 +170,12 @@ void playerMove(char * move, PLAYER * player){
         (*player).x += c_x;
         (*player).y += c_y;
 
-        //passPortal(player -> x, player -> y, p1, p2);
+        if (map.map[c_y][c_x] == PORTAL_1_ICON){
+            passPortal(player, p1);
+        }
+        else if (map.map[c_y][c_x] == PORTAL_2_ICON){
+            passPortal(player, p2);
+        }
     }
 }
 
@@ -174,11 +200,13 @@ int main(){
 
     PORTAL p1;
     p1.exists = 1;
+    p1.spawn_dir = 1;
     p1.x = 0;
     p1.y = 10;
 
     PORTAL p2;
     p2.exists = 1;
+    p1.spawn_dir = 3;
     p2.x = WIDTH - 1;
     p2.y = 10;
 
@@ -209,7 +237,7 @@ int main(){
             shootPortal(map, player, direction, portal, &p1, &p2);
         }
 
-        playerMove(move, &player);
+        playerMove(map, move, &player, p1, p2);
 
         clearMap(&map);
         updateMap(&map, player, p1, p2);
