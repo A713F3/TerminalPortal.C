@@ -83,6 +83,8 @@ void renderMap(HANDLE console, MAP map){
     }
 }
 
+//TODO: Implement passing through a portal mechanics
+//TODO: Implement portal shoting mechanics
 void playerMove(char * move, PLAYER * player){
     int i;
     char c;
@@ -149,8 +151,6 @@ int main(){
         clearMap(&map);
         updateMap(&map, player, p1, p2);
     }
-
-    
 
     return 0;
 }
